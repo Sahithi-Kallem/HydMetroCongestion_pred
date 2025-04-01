@@ -1,0 +1,23 @@
+ECHO is on.
+# Python-related
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
+
+# Data and model files (if you don't want to track them)
+data/processed_schedule.csv
+models/congestion_model.pkl
+models/scaler.pkl
+models/feature_names.txt
+
+# Logs and temporary files
+*.log
+*.tmp
+
+# Streamlit cache
+.streamlit/
