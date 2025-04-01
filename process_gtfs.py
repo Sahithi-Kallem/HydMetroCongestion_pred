@@ -86,8 +86,8 @@ schedule['flow_change'] = schedule.groupby(['stop_name', 'route_id'])['base_flow
 
 # Define fixed thresholds
 CONGESTION_THRESHOLDS = {
-    'Low': 500,
-    'Medium': 1500
+    'Low': 300,
+    'Medium': 700
 }
 print(f"Fixed Thresholds: Low < {CONGESTION_THRESHOLDS['Low']:.2f}, Medium {CONGESTION_THRESHOLDS['Low']:.2f}–{CONGESTION_THRESHOLDS['Medium']:.2f}, High > {CONGESTION_THRESHOLDS['Medium']:.2f}")
 
