@@ -32,12 +32,14 @@ This project predicts congestion levels at Hyderabad Metro stations using GTFS d
 5. Run the Streamlit app:
     streamlit run app.py
 
-Requirements
+## Requirements
 Python 3.8+
+
 Libraries: pandas, numpy, xgboost, scikit-learn, streamlit
 
-Future Improvements
+## Future Improvements
 Add dynamic thresholds based on station type.
+
 Implement CI/CD with GitHub Actions.
-Add more visualizations for passenger flow trends.
->>>>>>> dd44183 (Add README with project overview and setup instructions)
+
+Add more visualizations for passenger flow trends
