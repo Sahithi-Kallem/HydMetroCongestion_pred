@@ -30,17 +30,18 @@ def load_schedule():
         st.error("Error: 'data/processed_schedule.csv' not found. Run process_gtfs.py first.")
         return None
 
-# Load trained model and feature names
+# Load trained model, scaler, and feature names
 @st.cache_resource
 def load_model():
     try:
         model = joblib.load('models/congestion_model.pkl')
+        scaler = joblib.load('models/scaler.pkl')
         with open('models/feature_names.txt', 'r') as f:
             feature_names = f.read().split(',')
-        return model, feature_names
+        return model, scaler, feature_names
     except FileNotFoundError:
-        st.warning("Trained model or feature names not found. Run train_models.py to train the model. Using threshold-based predictions only.")
-        return None, None
+        st.warning("Trained model, scaler, or feature names not found. Run train_models.py to train the model. Using threshold-based predictions only.")
+        return None, None, None
 
 def fetch_events_near_stations(stations, current_date):
     """Fetch events near stations from Eventbrite."""
@@ -112,18 +113,24 @@ def nearest_station(lat, lon, stations):
     stations['distance'] = ((stations['stop_lat'] - lat)**2 + (stations['stop_lon'] - lon)**2)**0.5
     return stations.loc[stations['distance'].idxmin(), 'stop_name']
 
-def predict_congestion(model, input_data, feature_names):
+def predict_congestion(model, scaler, input_data, feature_names):
     """Predict congestion level using the trained model."""
-    numerical_features = [
-        'hour', 'day_type', 'poi_factor', 'event_factor', 'holiday_factor',
-        'rainfall_mm', 'temp_c', 'humidity', 'is_peak_hour', 'peak_poi_interaction'
-    ]
+    numerical_features = ['base_flow', 'hour', 'is_peak_hour', 'poi_factor']  # Match training features
     input_df = pd.DataFrame([input_data])
-    input_df = pd.get_dummies(input_df, columns=['stop_name', 'route_long_name'])
+    input_df = pd.get_dummies(input_df, columns=['stop_name'])
+    
+    # Add missing columns with zeros
     for feature in feature_names:
         if feature not in input_df.columns:
             input_df[feature] = 0
+    
+    # Ensure the columns are in the correct order
     input_df = input_df[feature_names]
+    
+    # Scale numerical features
+    input_df[numerical_features] = scaler.transform(input_df[numerical_features])
+    
+    # Predict
     prediction = model.predict(input_df)
     return prediction[0]
 
@@ -335,9 +342,9 @@ This tool predicts congestion levels at Hyderabad Metro stations based on histor
 
 # Load schedule and model
 schedule = load_schedule()
-model, feature_names = load_model()
+model, scaler, feature_names = load_model()
 
-if schedule is not None and model is not None and feature_names is not None:
+if schedule is not None and model is not None and scaler is not None and feature_names is not None:
     # Prepare stations data for event fetching
     stations_data = schedule[['stop_name', 'stop_lat', 'stop_lon']].drop_duplicates()
     stations = schedule['stop_name'].unique()
@@ -403,22 +410,15 @@ if schedule is not None and model is not None and feature_names is not None:
 
         # Prepare input data for ML prediction
         input_data = {
+            'base_flow': adjusted_flow,
             'hour': hour,
-            'day_type': display_day_type,
-            'poi_factor': 1.2 if station in ['Ameerpet', 'Kukatpally', 'Dilsukh Nagar', 'Nampally'] else 1.0,
-            'event_factor': event_factor,
-            'holiday_factor': holiday_factor,
-            'rainfall_mm': rainfall,
-            'temp_c': temp,
-            'humidity': humidity,
             'is_peak_hour': 1 if hour in [8, 9, 10, 17, 18, 19] else 0,
-            'peak_poi_interaction': (1 if hour in [8, 9, 10, 17, 18, 19] else 0) * (1.2 if station in ['Ameerpet', 'Kukatpally', 'Dilsukh Nagar', 'Nampally'] else 1.0),
-            'stop_name': station,
-            'route_long_name': row['route_long_name']
+            'poi_factor': 1.2 if station in ['Ameerpet', 'Kukatpally', 'Dilsukh Nagar', 'Nampally'] else 1.0,
+            'stop_name': station
         }
 
         # ML-based prediction
-        congestion_ml = predict_congestion(model, input_data, feature_names)
+        congestion_ml = predict_congestion(model, scaler, input_data, feature_names)
         congestion_label_ml = ["Low", "Medium", "High"][int(congestion_ml)]
 
         # Display prediction in a styled container
@@ -443,4 +443,4 @@ if schedule is not None and model is not None and feature_names is not None:
     </div>
     """, unsafe_allow_html=True)
 else:
-    st.error("Please ensure the schedule data and model are available to proceed.")
+    st.error("Please ensure the schedule data, model, and scaler are available to proceed.")
