@@ -1,8 +1,3 @@
-<<<<<<< HEAD
-# HydMetroCongestion_pred
-Hyderabad Metro Congestion Predictor app using GTFS data and XGBoost
-=======
-ECHO is on.
 # Hyderabad Metro Congestion Predictor
 
 This project predicts congestion levels at Hyderabad Metro stations using GTFS data and an XGBoost model.
